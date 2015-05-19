@@ -1,4 +1,5 @@
-function firstlastinds = findburst(spiketimes, maxISI, minSPB, minIBI, starttime, endtime)
+function firstlastinds = findburst(spiketimes, maxISI, minSPB, minIBI, ...
+                                   starttime, endtime, debug)
 
 % findburst - Identifies bursts with given constraints.
 %
@@ -12,6 +13,7 @@ function firstlastinds = findburst(spiketimes, maxISI, minSPB, minIBI, starttime
 %   minIBI: Minimum ISI tolerated in the inter-burst interval (IBI).
 %   starttime: Defaults to the first spiketime-2*maxISI.
 %   endtime: Defaults to the final spiketime+2*maxISI.
+%   debug: If 1, print reason for failure.
 %
 % Description:
 %   If a burst begins within maxISI of starttime or endtime, it is removed
@@ -22,7 +24,9 @@ function firstlastinds = findburst(spiketimes, maxISI, minSPB, minIBI, starttime
 %
 % Modified by: 
 % - Cengiz Gunay <cengique@users.sf.net> 2015/04/27
-%   Added IBI parameter and condition.
+%   Added IBI parameter and condition. Added debug flag.
+
+debug = defaultValue('debug', false);
 
 % if too few spikes in the input then short circuit to return
 if length(spiketimes) < minSPB
@@ -55,8 +59,12 @@ ibispikes = find(isis > maxISI);
 
 % if spikes don't slow enough in IBI, return
 if max(isis(ibispikes)) < minIBI
-   firstlastinds = [];
-   return;
+  if debug
+    warning([ 'Max ISI in the IBI region ' num2str(max(isis(ibispikes)))  ...
+              ' is below minIBI=' num2str(minIBI) '.' ]);
+  end
+  firstlastinds = [];
+  return;
 end
 
 % break into bursts within validspikes
@@ -66,8 +74,11 @@ endinds = strfind(vspkindinds,[1 0]);   % find end of burst (transition from 1 t
 
 % If we have no bursts then return
 if (isempty(startinds) || isempty(endinds))
-   firstlastinds = [];
-   return;
+  if debug
+    warning('Found no bursts.');
+  end
+  firstlastinds = [];
+  return;
 end
 
 % if first spike is within first burst
@@ -82,8 +93,11 @@ end
 
 % If we have no bursts remaining then return
 if (isempty(startinds) || isempty(endinds))
-   firstlastinds = [];
-   return;
+  if debug
+    warning('Found no bursts after removing first one.');
+  end
+  firstlastinds = [];
+  return;
 end
 
 % if last spike is within last burst
@@ -98,8 +112,11 @@ end
 
 % If we have no bursts remaining then return
 if (isempty(startinds) || isempty(endinds))
-   firstlastinds = [];
-   return;
+  if debug
+    warning('Found no bursts after removing last one.');
+  end
+  firstlastinds = [];
+  return;
 end
 
 % trim out bursts which are too short (fewer than minSPB spikes)
@@ -109,8 +126,12 @@ endinds = endinds(longburstsinds);
 
 % If we have no bursts remaining then return
 if (isempty(startinds) || isempty(endinds))
-   firstlastinds = [];
-   return;
+  if debug
+    warning(['No bursts left after trimming ones with fewer spikes ' ...
+             'than ' num2str(minSPB) '.' ]);
+  end
+  firstlastinds = [];
+  return;
 end
 
 startinds = validspikeinds(startinds);
